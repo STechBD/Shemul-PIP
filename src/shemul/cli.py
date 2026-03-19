@@ -22,9 +22,19 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _about_box(app: App) -> None:
+    body = (
+        "Built by S Technologies\n"
+        "Website: https://www.stechbd.net/product/Shemul-PIP\n"
+        "Repository: https://github.com/STechBD/Shemul-PIP"
+    )
+    app.ui.panel("About", body)
+
+
 def _show_help(app: App, state) -> None:
     ui = app.ui
-    ui.panel("Shemul", f"Shemul is an advanced, project-aware task runner.\nVersion: {__version__}")
+    ui.panel("Shemul", f"Shemul CLI is an advanced project-aware task runner based on JSON configuration for PIP.\nVersion: {__version__}")
+    _about_box(app)
     ui.info("Usage: shemul (options) <command> (args)")
     ui.info("Usage: shemul (options)  # show this help")
 
@@ -37,7 +47,7 @@ def _show_help(app: App, state) -> None:
     ui.table("Global Options", ["option", "description"], option_rows)
 
     global_rows = [
-        ["init <template>", "Create project shemul.json from a template"],
+        ["init [template]", "Create project shemul.json from a template (default: none)"],
         ["init -g [template]", "Create/edit global shemul.json in OS-native user config"],
         ["ls", "List configured commands (project + global)"],
         ["info", "Show detected project and active config"],
@@ -66,7 +76,7 @@ def _show_init_help(app: App) -> None:
         aliases = ", ".join(template_aliases(item["key"])[:2])
         rows.append([item["key"], item["desc"], aliases or "-"])
     app.ui.table("Init Templates", ["template", "description", "aliases"], rows)
-    app.ui.info("Usage: shemul init <template> [--force]")
+    app.ui.info("Usage: shemul init [template] [--force]")
     app.ui.info("Usage: shemul init -g [template] [--force]")
     app.ui.info("Usage: shemul init --list")
     app.ui.info("Example: shemul init docker fastapi backend")
@@ -100,11 +110,7 @@ def _handle_init(app: App, cwd: Path, args: list[str]) -> None:
         return
 
     if not template_tokens:
-        if global_scope:
-            template_key = "none"
-        else:
-            _show_init_help(app)
-            return
+        template_key = "none"
     else:
         template_input = " ".join(template_tokens).strip()
         template_key = resolve_template_key(template_input)
@@ -199,6 +205,7 @@ def main() -> None:
             active.append("global")
         lines.append(f"active scope: {' + '.join(active) if active else '(none)'}")
         ui.panel("Info", "\n".join(lines))
+        _about_box(app)
         return
 
     if ns.command == "ls":

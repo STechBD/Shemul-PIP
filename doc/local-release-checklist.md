@@ -35,13 +35,37 @@ Expected:
 ... passed
 ```
 
-## 4. Clean old build artifacts
+## 4. Smoke test CLI from source (no install)
+
+Windows PowerShell:
+
+```powershell
+$env:PYTHONPATH="src"
+python -m shemul.cli --help
+python -m shemul.cli info
+```
+
+Linux (bash/zsh):
+
+```bash
+PYTHONPATH=src python -m shemul.cli --help
+PYTHONPATH=src python -m shemul.cli info
+```
+
+Expected:
+
+```text
+Usage: shemul (options) <command> (args)
+... Info panel ...
+```
+
+## 5. Clean old build artifacts
 
 ```powershell
 Remove-Item -Recurse -Force dist, build, shemul.egg-info -ErrorAction SilentlyContinue
 ```
 
-## 5. Build package
+## 6. Build package
 
 ```powershell
 python -m pip install --upgrade pip
@@ -70,7 +94,7 @@ Expected files:
 1. `dist/shemul-<version>.tar.gz`
 2. `dist/shemul-<version>-py3-none-any.whl`
 
-## 6. Validate package metadata
+## 7. Validate package metadata
 
 ```powershell
 python -m twine check dist/*
@@ -83,13 +107,13 @@ Checking dist\shemul-<version>-py3-none-any.whl: PASSED
 Checking dist\shemul-<version>.tar.gz: PASSED
 ```
 
-## 7. Optional TestPyPI publish
+## 8. Optional TestPyPI publish
 
 ```powershell
 python -m twine upload --repository testpypi dist/*
 ```
 
-## 8. Final pre-push sanity
+## 9. Final pre-push sanity
 
 ```powershell
 git status

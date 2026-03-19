@@ -1,0 +1,13 @@
+{
+	"name": "shemul",
+	"version": "1.0.1",
+	"description": "Shemul is an advanced project-aware CLI tool for task automation based on JSON configuration for PIP.",
+	"private": true,
+	"scripts": {
+		"format": "prettier --write \"**/*.{md,json,yml,yaml,css,scss,less,html}\" --ignore-path .gitignore && markdownlint \"**/*.md\" --fix --ignore-path .gitignore"
+	},
+	"devDependencies": {
+		"markdownlint-cli": "^0.48.0",
+		"prettier": "^3.8.1"
+	}
+}

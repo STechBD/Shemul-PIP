@@ -93,9 +93,8 @@ def template_aliases(key: str) -> List[str]:
 
 def build_template_config(template_key: str, project_name: str) -> Dict[str, Any]:
     base = {
-        "$schema": "https://shemul.dev/schema.json",
         "name": project_name,
-        "version": "1.0",
+        "version": "1.0.0",
         "commands": {},
     }
 

@@ -41,8 +41,8 @@ The `Command` class owns resolution and execution metadata. This enables dry-run
 
 ### Initialization UX
 
-- `shemul init <template>` initializes project config.
-- `shemul init -g [template]` initializes global config.
+- `shemul init [template]` initializes project config (defaults to `none`).
+- `shemul init -g [template]` initializes global config (defaults to `none`).
 - Running `init` on an existing config warns with path and opens the file for editing.
 - `init -g` without template defaults to `none`.
 
