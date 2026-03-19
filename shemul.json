@@ -1,0 +1,17 @@
+{
+	"name": "Shemul",
+	"version": "1.0.0",
+	"commands": {
+		"setup:win": {
+			"run": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Remove-Item -Recurse -Force .venv, src\\\\shemul.egg-info -ErrorAction SilentlyContinue; py -3 -m venv .venv; .\\\\.venv\\\\Scripts\\\\python.exe -m pip install --upgrade pip; .\\\\.venv\\\\Scripts\\\\python.exe -m pip install -e .\"",
+			"group": "setup",
+			"desc": "Windows venv + editable install"
+		},
+		"setup:unix": {
+			"run": "rm -rf .venv src/shemul.egg-info; python3 -m venv .venv; .venv/bin/python -m pip install --upgrade pip; .venv/bin/python -m pip install -e .",
+			"group": "setup",
+			"desc": "Linux/macOS venv + editable install"
+		}
+	},
+	"runtime": "generic"
+}

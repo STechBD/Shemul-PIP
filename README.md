@@ -1,6 +1,6 @@
 # Shemul
 
-**Shemul** is a simple and lightweight **project-aware** task runner for development workflows. It is a free and open-source CLI that centralizes repetitive development commands in `shemul.json` and runs them with safety controls, supporting both project-local and user-global command scopes.
+Shemul is an advanced project-aware CLI tool for task automation based on JSON configuration for PIP. It is a free and open-source CLI that centralizes repetitive development commands in `shemul.json` and runs them with safety controls, supporting both project-local and user-global command scopes.
 
 ## Table of Contents
 
@@ -9,6 +9,7 @@
 - [Change log](#change-log)
 - [Installation](#installation)
 - [Usage](#usage)
+- [FAQs](#faqs)
 - [License](#license)
 - [Security](#security)
 - [Future Plan](#future-plan)
@@ -23,7 +24,7 @@
 
 ## Requirements
 
-- Python >= 3.14
+- Python >= 3.9
 - Optional: shell completion (bash, zsh, or fish) via scripts in `completion/`
 
 ## Features
@@ -35,13 +36,17 @@
 - [x] Safe execution controls: `confirm`, `danger`, `--dry`, `--trace`
 - [x] Diagnostics via `shemul doctor`
 - [x] Rich CLI output with grouped command lists and contextual help
-- [x] Built-in template-based initialization (`shemul init`)
+- [x] Built-in template-based initialization (`shemul init [template]`)
 - [x] Global initializer: `shemul init -g`
 - [x] JSON Schema validation for `shemul.json`
 - [x] Friendly command listing, info, help, and suggestions
 - [x] Shell completion scripts for bash, zsh, and fish
 
 ## Change log
+
+### Version 1.0.1 (March 20, 2026)
+
+- Fixed Python version requirement to >= 3.9 across package metadata and docs.
 
 ### Version 1.0.0 (February 11, 2026)
 
@@ -95,7 +100,7 @@ shemul <command>
 
 ### Init behavior
 
-- `shemul init <template>` creates project `shemul.json`.
+- `shemul init [template]` creates project `shemul.json`; without template uses `none`.
 - `shemul init -g [template]` creates global `shemul.json`; without template uses `none`.
 - If config already exists, `init` warns with path and opens the file for editing.
 - Use `--force` to overwrite existing config.
@@ -124,29 +129,28 @@ shemul <command>
 
 ```json
 {
-  "$schema": "https://shemul.dev/schema.json",
-  "name": "example-project",
-  "version": "1.0",
-  "runtime": "docker",
-  "env": {
-    "local": {
-      "compose": "docker-compose.yml"
-    }
-  },
-  "vars": {
-    "API": "api"
-  },
-  "commands": {
-    "up": {
-      "run": "docker compose up --build",
-      "env": "local",
-      "desc": "Start stack"
-    },
-    "migrate:up": {
-      "run": "docker compose exec {{API}} alembic upgrade head",
-      "confirm": true
-    }
-  }
+	"name": "example-project",
+	"version": "1.0.0",
+	"runtime": "docker",
+	"env": {
+		"local": {
+			"compose": "docker-compose.yml"
+		}
+	},
+	"vars": {
+		"API": "api"
+	},
+	"commands": {
+		"up": {
+			"run": "docker compose up --build",
+			"env": "local",
+			"desc": "Start stack"
+		},
+		"migrate:up": {
+			"run": "docker compose exec {{API}} alembic upgrade head",
+			"confirm": true
+		}
+	}
 }
 ```
 
@@ -158,6 +162,34 @@ shemul <command>
 ```bash
 python -m pytest -q
 ```
+
+## FAQs
+
+### What is Shemul?
+
+Shemul is an advanced project-aware CLI tool for task automation based on JSON configuration for PIP.
+
+### What is `shemul.json`?
+
+It is the project or global JSON config that defines your commands, variables, and environment presets.
+
+### Do I need both global and project configs?
+
+No. You can use either. If both exist, project commands override global commands with the same name.
+
+### How do I create a blank Shemul config?
+
+Run `shemul init` to create a minimal config using the `none` template.
+
+### How do I see the built-in schema for Shemul?
+
+Run `shemul schema` to print the bundled JSON Schema.
+
+### Where is the global config stored?
+
+Windows: `%APPDATA%\Shemul\shemul.json`  
+macOS: `~/Library/Application Support/Shemul/shemul.json`  
+Linux: `$XDG_CONFIG_HOME/shemul/shemul.json` (fallback: `~/.config/shemul/shemul.json`)
 
 ## License
 
@@ -174,6 +206,7 @@ If you discover any security-related issues, please email [product@stechbd.net](
 - [ ] Better cross-platform editor/open behavior and UX polish
 - [ ] Optional remote/team-shared config patterns
 - [ ] Additional command introspection and diagnostics
+- [ ] Support for custom terminal colors and themes
 
 ## Author
 
@@ -185,11 +218,7 @@ None yet.
 
 ## About S Technologies
 
-**S Technologies** (**STechBD.Net**) is a research-based technology company in Bangladesh.
-It was founded in 2013.
-It provides services like domain registration, web hosting, web servers, software development, AI model development, software as a service (SaaS), UI/UX design, SEO, business solutions, etc.
-**S Technologies** has been working in research of new technologies especially in artificial intelligence, and developing new products.
-You'll find an overview of all our open source products [on our website](https://www.stechbd.net/open-source).
+**S Technologies** (**STechBD.Net**) is a research-based technology company in Bangladesh. It was founded in 2013. It provides services like domain registration, web hosting, web servers, software development, AI model development, software as a service (SaaS), UI/UX design, SEO, business solutions, etc. **S Technologies** has been working in research of new technologies especially in artificial intelligence, and developing new products. You'll find an overview of all our open source products [on our website](https://www.stechbd.net/open-source).
 
 ## Support
 
@@ -197,7 +226,7 @@ If you are having general issues with this package, feel free to contact us on [
 
 If you believe you have found an issue, please report it using the [GitHub issue tracker](https://github.com/STechBD/Shemul-PIP/issues), or better yet, fork the repository and submit a pull request.
 
-- [Home Page](https://shemul.stechbd.net)
+- [Home Page](https://www.stechbd.net/product/Shemul-PIP)
 - [GitHub Repository](https://github.com/STechBD/Shemul-PIP)
 - [GitHub Issues](https://github.com/STechBD/Shemul-PIP/issues)
 - [PyPI Package](https://pypi.org/project/shemul/)

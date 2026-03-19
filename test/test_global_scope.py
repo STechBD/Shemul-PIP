@@ -174,6 +174,26 @@ def test_init_project_existing_warns_and_opens(monkeypatch):
         shutil.rmtree(temp, ignore_errors=True)
 
 
+def test_init_project_defaults_to_none_template(monkeypatch):
+    temp = _temp_dir("init_project_default")
+    opened: list[Path] = []
+    try:
+        monkeypatch.setattr("shemul.cli.open_in_editor", lambda path: opened.append(path) or True)
+
+        app = App()
+        _mute_ui(app)
+        _handle_init(app, temp, [])
+
+        target = temp / "shemul.json"
+        assert target.exists()
+        raw = json.loads(target.read_text(encoding="utf-8"))
+        assert raw["name"] == temp.name
+        assert "example" in raw["commands"]
+        assert opened == [target]
+    finally:
+        shutil.rmtree(temp, ignore_errors=True)
+
+
 def test_app_load_state_uses_global_when_project_missing(monkeypatch):
     temp = _temp_dir("state_global_only")
     try:
