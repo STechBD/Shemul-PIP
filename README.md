@@ -25,7 +25,10 @@ Shemul is an advanced project-aware CLI tool for task automation based on JSON c
 ## Requirements
 
 - Python >= 3.9
+- Dependencies (installed automatically): `rich`, `jsonschema`, `questionary`
 - Optional: shell completion (bash, zsh, or fish) via scripts in `completion/`
+- Interactive arrow-key prompts activate on a real terminal; set `SHEMUL_NO_INTERACTIVE=1`
+  (or pipe input / run in CI) to use plain typed prompts instead.
 
 ## Features
 
@@ -41,8 +44,36 @@ Shemul is an advanced project-aware CLI tool for task automation based on JSON c
 - [x] JSON Schema validation for `shemul.json`
 - [x] Friendly command listing, info, help, and suggestions
 - [x] Shell completion scripts for bash, zsh, and fish
+- [x] Cross-OS commands — one command, per-OS variants via `os` (`v2.0.0`)
+- [x] Interpreter maps (`bin`) and magic variables (`{{os}}`, `{{python}}`, …) (`v2.0.0`)
+- [x] Default shell selection via top-level `runtime` (`v2.0.0`)
+- [x] Opt-in safe execution with `shell: false` / `exec: [...]` (`v2.0.0`)
+- [x] Task pipelines: `needs` dependencies, `pre`/`post` hooks, `parallel` groups (`v2.0.0`)
+- [x] Update notifier + version codes (`shemul update`, `shemul version --code`) (`v2.0.0`)
+- [x] Optional background auto-update + `shemul settings` (enable/disable) (`v2.0.0`)
+- [x] Interactive prompts — arrow-key Yes/No, settings, and pickers (TTY only) (`v2.0.0`)
+- [x] System commands via slash (`shemul /init`) so your own commands can shadow built-ins (`v2.0.0`)
+- [x] `s` short alias with conflict detection (`shemul alias install`) (`v2.0.0`)
+- [x] Plugin API via the `shemul.plugins` entry-point group and per-command `runner` (`v2.0.0`)
+
+> New to Shemul, or want copy-paste examples for every feature?
+> See **[doc/usage.md](doc/usage.md)** — examples for each feature, old and new.
 
 ## Change log
+
+### Version 2.0.0 (June 6, 2026)
+
+- **Breaking:** bare built-in names (`init`, `ls`, `info`, …) now defer to a same-named project command; use the slash form (`shemul /init`) for the built-in. New runtime dependency `questionary`.
+- Cross-OS command engine: per-command `os` overrides, `bin` interpreter maps, and magic variables.
+- Default shell selection via top-level `runtime`.
+- Opt-in safe execution (`shell: false` / `exec: [...]`).
+- Task pipelines: `needs`, `pre`/`post`, and `parallel`.
+- Update notifier with version codes; `shemul update` and `shemul version --code`.
+- Optional background auto-update (opt-in) and a `shemul settings` command to toggle it.
+- Interactive prompts: arrow-key Yes/No confirms, settings editor, and pickers (with non-TTY fallback).
+- `s` short alias via opt-in installer (`shemul alias install|status|remove`).
+- Plugin API (`shemul.plugins` entry-point group; per-command `runner`).
+- Extended `shemul doctor` (OS, interpreters, alias, update reachability).
 
 ### Version 1.0.1 (March 20, 2026)
 
@@ -109,14 +140,42 @@ Available templates: `docker-fastapi-backend`, `fastapi-backend`, `django-drf-ba
 
 ### Common commands
 
+Run your own project/global commands from `shemul.json`:
+
 ```bash
-shemul ls
-shemul info
-shemul help <name|group>
-shemul doctor
-shemul schema
-shemul <command>
+shemul <command>            # run a command
+shemul --dry <command>      # preview the resolved command without running it
+shemul <command> [args]     # tokens after the name are passed through to the command
 ```
+
+System (built-in) commands. **Prefix with a leading slash** so they never clash with a project
+command of the same name — `shemul /ls` always means the built-in:
+
+```bash
+shemul /ls                  # list configured commands
+shemul /info                # detected project + active config/scopes
+shemul /help <name|group>   # help for a command or group
+shemul /doctor              # environment readiness checks
+shemul /schema              # print the bundled JSON Schema
+shemul /init [template]     # create project shemul.json (add -g for global)
+shemul /update              # check PyPI for a newer release now
+shemul /version --code      # 2.0.0 (code 3)
+shemul /alias status        # what does `s` resolve to?
+shemul /alias install       # enable the `s` shortcut (if free)
+shemul /settings            # view / edit settings (interactive on a TTY)
+shemul /settings auto-update on   # auto-run `pip install -U shemul` in the background
+shemul /about               # styled About panel: version, version code, update status
+shemul --no-update-check <command>   # skip the update check for one run
+```
+
+> Flag order: global options come **before** the command — `shemul --dry build`, not
+> `shemul build --dry`. Tokens after the command name are passed through to the command.
+
+> Slash vs bare: the slash form (`shemul /init`) **always** runs the built-in. The bare form
+> (`shemul init`) also works, but if your `shemul.json` defines a command with that name the bare
+> form runs **your** command — so the slash is the unambiguous way to reach a system command. (Git
+> Bash/MSYS2 on Windows rewrites a single leading slash into a path — use `//init` there, or any
+> other shell.)
 
 ### Safety flags
 
@@ -124,6 +183,55 @@ shemul <command>
 - `danger: true` prompts with stronger warning.
 - `--dry` prints resolved command.
 - `--trace` prints resolved command and env context.
+
+### What's new in 2.0.0 (quick reference)
+
+Cross-OS, portable commands:
+
+```json
+{
+  "bin": { "py": { "windows": "python", "default": "python3" } },
+  "commands": {
+    "run":  { "run": "{{py}} app.py" },
+    "open": { "run": "xdg-open .", "os": { "windows": "start .", "macos": "open ." } },
+    "info": { "run": "echo {{os}}/{{arch}}" }
+  }
+}
+```
+
+Task pipelines:
+
+```json
+{
+  "commands": {
+    "install": { "run": "npm ci" },
+    "lint":    { "run": "npm run lint" },
+    "test":    { "run": "npm test", "needs": ["install"] },
+    "ci":      { "run": "echo green", "needs": ["lint", "test"], "parallel": true },
+    "release": { "run": "npm publish", "pre": ["ci"], "post": ["echo done"] }
+  }
+}
+```
+
+New config keys (all optional, all backward compatible):
+
+| Key | Scope | Purpose |
+|---|---|---|
+| `os` | command | Per-OS `run` override (`windows`/`macos`/`linux`/`default`) |
+| `bin` | top-level | Named per-OS interpreters, used as `{{name}}` or `{{bin.name}}` |
+| `runtime` | top-level | Default shell (`sh`/`bash`/`powershell`/…) when a command sets none |
+| `shell` | command | `false` for arg-vector exec, or a shell name |
+| `exec` | command | Argument vector to run without a shell |
+| `needs` | command | Commands to run first (deduped, cycle-checked) |
+| `pre` / `post` | command | Run before / after (post only on success) |
+| `parallel` | command | Run this command's `needs` concurrently |
+| `runner` | command | Dispatch to a plugin runner (`shemul.plugins`) |
+| `requires` | top-level | Minimum Shemul version, e.g. `">=2.0.0"` |
+| `update_check` | top-level | Set `false` to disable the update notifier |
+
+Magic variables (no config needed): `{{os}}`, `{{arch}}`, `{{python}}`, `{{shell}}`, `{{sep}}`, `{{home}}`.
+
+Full walkthrough with 1–3 examples per feature: **[doc/usage.md](doc/usage.md)**.
 
 ### Configuration example
 
@@ -157,10 +265,22 @@ shemul <command>
 ### Development
 
 - Source layout uses `src/`. Tests are in `test/`.
-- Run tests:
+- Install with test extras, then run tests:
 
 ```bash
+python -m pip install -e ".[test]"
 python -m pytest -q
+```
+
+- CI runs the suite on Ubuntu, Windows, and macOS across Python 3.9–3.13
+  (`.github/workflows/test.yml`).
+- The repo's own `shemul.json` defines dev commands (group `dev`) for testing before publishing:
+
+```bash
+shemul cli /version --code   # run the source CLI (python -m shemul.cli) with any args
+shemul test                  # python -m pytest -q
+shemul build                 # python -m build
+shemul check                 # python -m twine check dist/*
 ```
 
 ## FAQs
@@ -191,6 +311,60 @@ Windows: `%APPDATA%\Shemul\shemul.json`
 macOS: `~/Library/Application Support/Shemul/shemul.json`  
 Linux: `$XDG_CONFIG_HOME/shemul/shemul.json` (fallback: `~/.config/shemul/shemul.json`)
 
+### How is Shemul different from Make / a Makefile?
+
+Make is a **build system**: it tracks file timestamps to rebuild targets, uses a tab-sensitive DSL,
+and is POSIX-centric. Shemul is a **task runner**: it centralizes named commands in JSON (no DSL),
+runs the same command across operating systems (`os`/`bin`/magic vars), and adds safety gates
+(`confirm`/`danger`), dual project **+ global** scope, and an update notifier. Reach for Make when you
+need incremental artifact builds; reach for Shemul when you want portable, safe, named project
+commands. They compose — a Shemul command can call `make`.
+
+### How is Shemul different from Just?
+
+Just is an excellent command runner with a `justfile` DSL and `[os]` recipe attributes. Shemul meets
+the same per-OS need via `os`/`bin`/magic vars but uses **JSON** (machine-editable, schema-validated),
+and adds **global** user-wide commands, **safety prompts**, an **update notifier + auto-update**,
+**interactive** arrow-key prompts, **slash system commands**, the **`s`** alias, and a **plugin API**.
+Pick Just for a single-binary DSL; pick Shemul for JSON-first, safety-focused, pip-native workflows.
+
+### How is Shemul different from Task (go-task)?
+
+Task uses YAML and ships its own built-in cross-platform shell interpreter. Shemul uses JSON and runs
+through the system shell (with **opt-in** arg-vector exec for safety/portability). Both do
+dependencies and parallelism; Shemul differentiates with safety gates, project **+ global** scope,
+interactive UI, version codes, and background auto-update.
+
+### How is Shemul different from npm scripts?
+
+npm scripts live in `package.json` and assume a Node project. Shemul is **language-agnostic**, works
+in any repository (and globally across repositories), and adds per-OS commands, dependencies /
+pre-post / parallel, safety gates, schema validation, and a richer CLI UX.
+
+### Why JSON instead of a Makefile/justfile DSL or YAML?
+
+JSON is universal and trivially generated/edited by tools, and Shemul ships a **JSON Schema** so
+editors give you validation and autocomplete out of the box. You get structure without learning a
+bespoke language. (Comment support — JSONC — is being considered for a future release.)
+
+### Is Shemul a build system?
+
+No. Shemul runs and orchestrates **tasks**; it does not do incremental, file-hash-based rebuilds.
+That is a deliberate non-goal — it composes alongside Make/CMake/etc. rather than replacing them.
+
+### Can I use Shemul together with Make, Just, or npm?
+
+Yes. Shemul commands are ordinary shell commands, so a Shemul command can call `make`, `just`,
+`npm run`, `docker compose`, and so on. Many teams use Shemul as the friendly, safe front door to
+existing tooling.
+
+### Does Shemul phone home?
+
+Only an opt-out update check: a single best-effort GET to the Shemul manifest (PyPI fallback) at most
+once per 24 hours, cached locally, with **no telemetry or identifiers**. Disable it with
+`SHEMUL_NO_UPDATE_CHECK=1`, `--no-update-check`, or `"update_check": false`. Background auto-update is
+**off by default** and opt-in via `shemul /settings`.
+
 ## License
 
 Shemul is open-sourced software licensed under the [MIT License](LICENSE).
@@ -201,12 +375,14 @@ If you discover any security-related issues, please email [product@stechbd.net](
 
 ## Future Plan
 
-- [ ] Plugin/extensibility system for custom resolvers and runners
-- [ ] More built-in templates and community template registry
-- [ ] Better cross-platform editor/open behavior and UX polish
-- [ ] Optional remote/team-shared config patterns
-- [ ] Additional command introspection and diagnostics
-- [ ] Support for custom terminal colors and themes
+Ideas under consideration for future releases (all additive unless noted):
+
+- [ ] Watch mode, matrix commands, conditional `when`/`unless`, retry/timeout
+- [ ] Config composition (`extends`/includes), profiles/contexts, dotenv & secrets
+- [ ] TUI command launcher, `shemul graph` (DAG view), completion auto-install, themes
+- [ ] Community template registry and remote/team-shared configs
+- [ ] Richer plugin API (lifecycle hooks, custom resolvers) and update channels
+- [ ] (v3.0.0, breaking) Safe-by-default execution — arg-vector exec as the default
 
 ## Author
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import tempfile
 import uuid
 from pathlib import Path
 
@@ -12,8 +13,9 @@ from shemul.util import global_config_path
 
 
 def _temp_dir(prefix: str) -> Path:
-    base = Path(".tmp_test") / f"{prefix}_{uuid.uuid4().hex}"
-    base.mkdir(parents=True, exist_ok=True)
+    # Use the system temp location (no shemul.json ancestor) so project
+    # discovery tests are not polluted by the repository's own shemul.json.
+    base = Path(tempfile.mkdtemp(prefix=f"{prefix}_{uuid.uuid4().hex}_"))
     return base
 
 

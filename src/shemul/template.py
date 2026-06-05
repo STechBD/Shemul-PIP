@@ -118,7 +118,7 @@ def build_template_config(template_key: str, project_name: str) -> Dict[str, Any
         base["runtime"] = "python"
         base["commands"] = {
             "dev": {"run": "uvicorn app.main:app --reload --host 0.0.0.0 --port 8000", "desc": "Run dev server"},
-            "start": {"run": "python -m app.main", "desc": "Run app entrypoint"},
+            "start": {"run": "{{python}} -m app.main", "desc": "Run app entrypoint"},
             "test": {"run": "pytest -q", "group": "quality", "desc": "Run tests"},
             "lint": {"run": "ruff check .", "group": "quality", "desc": "Run linter"},
             "format": {"run": "ruff format .", "group": "quality", "desc": "Format source"},
@@ -126,11 +126,11 @@ def build_template_config(template_key: str, project_name: str) -> Dict[str, Any
     elif template_key == "django-drf-backend":
         base["runtime"] = "python"
         base["commands"] = {
-            "dev": {"run": "python manage.py runserver 0.0.0.0:8000", "desc": "Run dev server"},
-            "migrate:make": {"run": "python manage.py makemigrations", "group": "db", "desc": "Create migrations"},
-            "migrate:up": {"run": "python manage.py migrate", "group": "db", "desc": "Apply migrations"},
-            "superuser": {"run": "python manage.py createsuperuser", "confirm": True, "desc": "Create admin user"},
-            "test": {"run": "python manage.py test", "group": "quality", "desc": "Run tests"},
+            "dev": {"run": "{{python}} manage.py runserver 0.0.0.0:8000", "desc": "Run dev server"},
+            "migrate:make": {"run": "{{python}} manage.py makemigrations", "group": "db", "desc": "Create migrations"},
+            "migrate:up": {"run": "{{python}} manage.py migrate", "group": "db", "desc": "Apply migrations"},
+            "superuser": {"run": "{{python}} manage.py createsuperuser", "confirm": True, "desc": "Create admin user"},
+            "test": {"run": "{{python}} manage.py test", "group": "quality", "desc": "Run tests"},
             "lint": {"run": "ruff check .", "group": "quality", "desc": "Run linter"},
         }
     elif template_key == "expressjs-backend":

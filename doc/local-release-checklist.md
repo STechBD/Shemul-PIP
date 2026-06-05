@@ -18,14 +18,19 @@ Expected:
 
 ## 2. Keep version aligned
 
-Update both files with the same version:
+Update all four with the same release, bumping the version code by exactly 1:
 
 1. `pyproject.toml` -> `[project].version`
 2. `src/shemul/version.py` -> `__version__`
+3. `src/shemul/version.py` -> `VERSION_CODE`
+4. `CHANGELOG.md` -> the `Version Code:` line (must equal `VERSION_CODE`)
 
 ## 3. Run tests
 
+Install test extras first, then run the suite:
+
 ```powershell
+python -m pip install -e ".[test]"
 python -m pytest -q
 ```
 

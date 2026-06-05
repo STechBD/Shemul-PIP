@@ -71,6 +71,14 @@ PYTHONPATH=src python -m shemul.cli info
 PYTHONPATH=src python -m shemul.cli init
 ```
 
+Smoke-test the 2.0.0 commands (any OS):
+
+```bash
+PYTHONPATH=src python -m shemul.cli version --code      # 2.0.0 (code 3)
+PYTHONPATH=src python -m shemul.cli alias status
+PYTHONPATH=src python -m shemul.cli --no-update-check doctor
+```
+
 ## Clean Build Artifacts
 
 Windows PowerShell:

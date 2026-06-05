@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from rich.prompt import Confirm
+from . import interactive
 
 
 class Guard:
     def confirm(self, message: str) -> bool:
-        return Confirm.ask(message, default=False)
+        return interactive.confirm(message, default=False)

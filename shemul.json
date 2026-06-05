@@ -1,6 +1,8 @@
 {
 	"name": "Shemul",
 	"version": "1.0.0",
+	"requires": ">=2.0.0",
+	"runtime": "generic",
 	"commands": {
 		"setup:win": {
 			"run": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Remove-Item -Recurse -Force .venv, src\\\\shemul.egg-info -ErrorAction SilentlyContinue; py -3 -m venv .venv; .\\\\.venv\\\\Scripts\\\\python.exe -m pip install --upgrade pip; .\\\\.venv\\\\Scripts\\\\python.exe -m pip install -e .\"",
@@ -11,7 +13,26 @@
 			"run": "rm -rf .venv src/shemul.egg-info; python3 -m venv .venv; .venv/bin/python -m pip install --upgrade pip; .venv/bin/python -m pip install -e .",
 			"group": "setup",
 			"desc": "Linux/macOS venv + editable install"
+		},
+		"cli": {
+			"run": "{{python}} -m shemul.cli",
+			"group": "dev",
+			"desc": "Run the Shemul CLI from source (pre-publish test). Append args, e.g. shemul cli /doctor"
+		},
+		"test": {
+			"run": "{{python}} -m pytest -q",
+			"group": "dev",
+			"desc": "Run the test suite"
+		},
+		"build": {
+			"run": "{{python}} -m build",
+			"group": "dev",
+			"desc": "Build sdist + wheel"
+		},
+		"check": {
+			"run": "{{python}} -m twine check dist/*",
+			"group": "dev",
+			"desc": "Validate built distribution metadata"
 		}
-	},
-	"runtime": "generic"
+	}
 }
