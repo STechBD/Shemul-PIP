@@ -28,6 +28,8 @@ Version 2.0.0 is a major release of Shemul that roughly doubles the feature set.
 - **Command dispatch precedence.** A bare built-in name (`init`, `ls`, `info`, `help`, `doctor`, `schema`) now runs your project/global command of that name when one exists, instead of always running the built-in. Use the slash form (`shemul /init`) to force the built-in. Configs that did not define commands with these names are unaffected.
 - **New runtime dependency:** `questionary` (for interactive prompts). Installed automatically by pip.
 
+See the migration guide: `doc/migration-1.0.1-to-2.0.0.md`.
+
 ### Changes
 
 - Cross-OS command engine: per-command `os` overrides, top-level `bin` interpreter maps, and magic variables (`{{os}}`, `{{arch}}`, `{{python}}`, `{{shell}}`, `{{sep}}`, `{{home}}`).

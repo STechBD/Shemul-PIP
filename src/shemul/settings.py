@@ -131,7 +131,7 @@ def _interactive_or_show(ui) -> int:
 def _show(ui) -> int:
     data = load()
     rows = [[k, str(data.get(k))] for k in sorted(DEFAULTS)]
-    ui.table("Settings", ["setting", "value"], rows)
+    ui.table("Settings", ["Setting", "Value"], rows)
     ui.info("Toggle with: shemul settings auto-update on|off")
     ui.info(f"Settings file: {global_settings_path()}")
     return 0

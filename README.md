@@ -63,7 +63,7 @@ Shemul is an advanced project-aware CLI tool for task automation based on JSON c
 
 ### Version 2.0.0 (June 6, 2026)
 
-- **Breaking:** bare built-in names (`init`, `ls`, `info`, …) now defer to a same-named project command; use the slash form (`shemul /init`) for the built-in. New runtime dependency `questionary`.
+- **Breaking:** bare built-in names (`init`, `ls`, `info`, …) now defer to a same-named project command; use the slash form (`shemul /init`) for the built-in. New runtime dependency `questionary`. See the [migration guide](doc/migration-1.0.1-to-2.0.0.md).
 - Cross-OS command engine: per-command `os` overrides, `bin` interpreter maps, and magic variables.
 - Default shell selection via top-level `runtime`.
 - Opt-in safe execution (`shell: false` / `exec: [...]`).

@@ -17,7 +17,8 @@ def _info(version="1.2.0", code=4):
     return UpdateInfo(version=version, version_code=code, min_supported_code=1, url="u", notes="n")
 
 
-def test_update_check_enabled_default():
+def test_update_check_enabled_default(monkeypatch):
+    monkeypatch.delenv("SHEMUL_NO_UPDATE_CHECK", raising=False)
     assert update_check_enabled(None, False) is True
 
 

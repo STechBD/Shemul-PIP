@@ -1,6 +1,6 @@
 {
 	"name": "shemul",
-	"version": "1.0.1",
+	"version": "2.0.0",
 	"description": "Shemul is an advanced project-aware CLI tool for task automation based on JSON configuration for PIP.",
 	"private": true,
 	"scripts": {

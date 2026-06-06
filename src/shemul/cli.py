@@ -37,11 +37,43 @@ def _about_box(app: App) -> None:
     app.ui.panel("About", body)
 
 
+# Block wordmark template ('@' is the fill cell). Rendered as a solid block on
+# Unicode-capable terminals and '#' on legacy / cp1252 consoles (see _unicode_ok).
+_BANNER_TEMPLATE = """
+@@@@@ @   @ @@@@@ @   @ @   @ @
+@     @   @ @     @@ @@ @   @ @
+@@@@@ @@@@@ @@@@  @ @ @ @   @ @
+    @ @   @ @     @   @ @   @ @
+@@@@@ @   @ @@@@@ @   @ @@@@@ @@@@@
+"""
+
+
+def _unicode_ok(console) -> bool:
+    """True when the console can render block/box glyphs without encoding errors."""
+    if getattr(console, "legacy_windows", False):
+        return False
+    enc = getattr(console, "encoding", None) or "utf-8"
+    try:
+        "█─".encode(enc)  # full block + box-drawing horizontal
+        return True
+    except Exception:
+        return False
+
+
 def _show_about(app: App, force: bool = False) -> int:
-    """Render a styled About panel with version, version code, and update status."""
+    """Render a polished About panel: wordmark, version, live update status, links."""
+    from rich import box
     from rich.console import Group
+    from rich.panel import Panel
+    from rich.rule import Rule
     from rich.table import Table
     from rich.text import Text
+
+    console = app.ui.console
+    unicode_ok = _unicode_ok(console)
+    fill = "█" if unicode_ok else "#"
+    rule_char = "─" if unicode_ok else "-"
+    banner = _BANNER_TEMPLATE.strip("\n").replace("@", fill)
 
     status, info = updater.about_status(
         cache_path=global_cache_path(),
@@ -49,61 +81,85 @@ def _show_about(app: App, force: bool = False) -> int:
         current_version=__version__,
         force=force,
     )
-
     if status == "outdated" and info is not None:
-        update_line = Text.assemble(
-            ("Update available: ", "bold yellow"),
-            (info.version, "bold white"),
-            ("   run ", "yellow"),
-            ("pip install -U shemul", "bold cyan"),
+        status_value = Text.assemble(
+            (" UPDATE AVAILABLE ", "bold white on yellow"),
+            ("  ", ""),
+            (info.version, "bold yellow"),
+            ("   pip install -U shemul", "cyan"),
         )
     elif status == "current":
-        update_line = Text("You are on the latest version", style="bold green")
+        status_value = Text.assemble(
+            (" UP TO DATE ", "bold white on green"),
+            (f"   v{__version__}", "dim"),
+        )
     else:
-        update_line = Text("Update status unavailable (offline)", style="dim")
+        status_value = Text.assemble(
+            (" OFFLINE ", "bold white on bright_black"),
+            ("   update check unavailable", "dim"),
+        )
+
+    def _link(url: str) -> Text:
+        return Text(url, style="cyan")
 
     grid = Table.grid(padding=(0, 3))
     grid.add_column(justify="right", style="bold cyan", no_wrap=True)
-    grid.add_column(style="white")
-    grid.add_row("Version", Text.assemble((__version__, "bold white"), (f"   (code {VERSION_CODE})", "dim")))
-    grid.add_row("Status", update_line)
-    grid.add_row("Built by", "S Technologies (STechBD.Net)")
-    grid.add_row("Website", Text("https://www.stechbd.net/product/Shemul-PIP", style="underline blue"))
-    grid.add_row("Repository", Text("https://github.com/STechBD/Shemul-PIP", style="underline blue"))
-    grid.add_row("PyPI", Text("https://pypi.org/project/shemul", style="underline blue"))
-    grid.add_row("License", "MIT")
+    grid.add_column()
+    grid.add_row("Status", status_value)
+    grid.add_row("Developer", Text("S Technologies (STechBD.Net)", style="white"))
+    grid.add_row("Author", Text("Md. Ashraful Alam Shemul", style="white"))
+    grid.add_row("Website", _link("https://www.stechbd.net/product/Shemul-PIP"))
+    grid.add_row("Source", _link("https://github.com/STechBD/Shemul-PIP"))
+    grid.add_row("PyPI", _link("https://pypi.org/project/shemul"))
+    grid.add_row("License", Text("MIT", style="white"))
 
-    header = Text.assemble(
-        ("Shemul", "bold magenta"),
-        ("  -  ", "dim"),
-        ("Project-aware JSON task runner", "italic white"),
+    tagline = Text.assemble(
+        ("Project-aware JSON task runner", "italic bright_white"),
+        ("      v", "dim"),
+        (__version__, "bold cyan"),
+        (f"  (code {VERSION_CODE})", "dim"),
     )
-
     description = Text(
         "Shemul is an advanced project-aware CLI tool for task automation based on JSON "
         "configuration for PIP. It is a free and open-source CLI that centralizes repetitive "
         "development commands in shemul.json and runs them with safety controls, supporting both "
         "project-local and user-global command scopes.",
-        style="white",
+        style="grey78" if unicode_ok else "white",
+    )
+    hint = Text.assemble(
+        ("Try   ", "dim"),
+        ("shemul /help", "bold cyan"),
+        ("      ", ""),
+        ("shemul /ls", "bold cyan"),
+        ("      ", ""),
+        ("shemul /update", "bold cyan"),
     )
 
-    panel = box_panel(Group(header, Text(""), description, Text(""), grid))
-    app.ui.console.print(panel)
-    return 0
+    body = Group(
+        Text(banner, style="bold magenta"),
+        Text(""),
+        tagline,
+        Text(""),
+        description,
+        Text(""),
+        Rule(characters=rule_char, style="grey37" if unicode_ok else "cyan"),
+        Text(""),
+        grid,
+        Text(""),
+        hint,
+    )
 
-
-def box_panel(renderable):
-    from rich import box
-    from rich.panel import Panel
-
-    return Panel(
-        renderable,
+    panel = Panel(
+        body,
         title="[bold]About Shemul[/bold]",
         subtitle="[dim]thanks for using Shemul[/dim]",
         border_style="cyan",
         box=box.ROUNDED,
-        padding=(1, 3),
+        padding=(1, 4),
+        width=min(74, console.width),
     )
+    console.print(panel)
+    return 0
 
 
 def _show_help(app: App, state) -> None:
@@ -119,23 +175,25 @@ def _show_help(app: App, state) -> None:
         ["--dry", "Print resolved command only"],
         ["--trace", "Show resolved vars and env"],
     ]
-    ui.table("Global Options", ["option", "description"], option_rows)
+    ui.table("Global Options", ["Option", "Description"], option_rows)
 
     global_rows = [
-        ["init [template]", "Create project shemul.json from a template (default: none)"],
-        ["init -g [template]", "Create/edit global shemul.json in OS-native user config"],
-        ["ls", "List configured commands (project + global)"],
-        ["info", "Show detected project and active config"],
-        ["help [name|group]", "Show command/group help or full help"],
-        ["doctor", "Run system readiness checks"],
-        ["schema", "Print built-in JSON schema"],
-        ["alias [install|status|remove]", "Manage the `s` shortcut alias (same as shemul)"],
-        ["update", "Check PyPI for a newer Shemul release"],
-        ["settings [auto-update on|off]", "View or change Shemul settings"],
-        ["about", "Show information about Shemul"],
+        ["/init [template]", "Create project shemul.json from a template (default: none)"],
+        ["/init -g [template]", "Create/edit global shemul.json in OS-native user config"],
+        ["/ls", "List configured commands (project + global)"],
+        ["/info", "Show detected project and active config"],
+        ["/help [name|group]", "Show command/group help or full help"],
+        ["/doctor", "Run system readiness checks"],
+        ["/schema", "Print built-in JSON schema"],
+        ["/alias [install|status|remove]", "Manage the `s` shortcut alias (same as shemul)"],
+        ["/update", "Check PyPI for a newer Shemul release"],
+        ["/settings [auto-update on|off]", "View or change Shemul settings"],
+        ["/version [--code]", "Print the Shemul version (and version code)"],
+        ["/about", "Show information about Shemul"],
     ]
-    ui.table("Global Commands", ["command", "description"], global_rows)
-    ui.info("Tip: prefix a system command with '/' (e.g. `shemul /init`) to bypass a project command of the same name.")
+    ui.table("System Commands", ["Command", "Description"], global_rows)
+    ui.info("Tip: options use a leading '-'/'--' (e.g. `--code`); system commands use a leading '/' (e.g. `shemul /init`).")
+    ui.info("The '/' forces the built-in even when a project command of the same name exists; bare names (e.g. `shemul init`) prefer your project command.")
 
     if not state.config:
         ui.warn("No config found. Run `shemul init -g` to initialize global commands.")
@@ -147,7 +205,7 @@ def _show_help(app: App, state) -> None:
         group = str(cfg.get("group", "core"))
         desc = str(cfg.get("desc", "")).strip() or "-"
         rows.append([name, group, desc])
-    ui.table("Available Commands", ["command", "group", "description"], rows)
+    ui.table("Available Commands", ["Command", "Group", "Description"], rows)
 
 
 def _show_init_help(app: App) -> None:
@@ -155,7 +213,7 @@ def _show_init_help(app: App) -> None:
     for item in list_templates():
         aliases = ", ".join(template_aliases(item["key"])[:2])
         rows.append([item["key"], item["desc"], aliases or "-"])
-    app.ui.table("Init Templates", ["template", "description", "aliases"], rows)
+    app.ui.table("Init Templates", ["Template", "Description", "Aliases"], rows)
     app.ui.info("Usage: shemul init [template] [--force]")
     app.ui.info("Usage: shemul init -g [template] [--force]")
     app.ui.info("Usage: shemul init --list")
@@ -277,7 +335,7 @@ def _run_system(app: App, state, ns, name: str) -> Optional[int]:
         for check in checks:
             status = "ok" if check.ok else "fail"
             rows.append([status, check.name, check.detail])
-        ui.table("Doctor", ["status", "check", "detail"], rows)
+        ui.table("Doctor", ["Status", "Check", "Detail"], rows)
         return 0
 
     if name == "schema":
@@ -326,8 +384,9 @@ def _run_system(app: App, state, ns, name: str) -> Optional[int]:
         rows = []
         for group, names in grouped.items():
             for cname in names:
-                rows.append([group, cname])
-        ui.table("Commands", ["group", "command"], rows)
+                desc = str(state.config.commands.get(cname, {}).get("desc", "")).strip() or "-"
+                rows.append([group, cname, desc])
+        ui.table("Commands", ["Group", "Command", "Description"], rows)
         return 0
 
     if name == "help":
