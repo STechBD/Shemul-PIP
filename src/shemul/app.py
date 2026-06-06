@@ -11,6 +11,9 @@ from .config import ConfigLoader, ShemulConfig
 from .context import ContextDiscovery, ProjectContext
 from .executor import Executor
 from .guard import Guard
+from .planner import Planner, has_planner_keys
+from .platforms import detect_os
+from .plugins import discover
 from .ui import UI
 from .util import global_config_path
 
@@ -29,6 +32,7 @@ class App:
         self.guard = Guard()
         self.executor = Executor()
         self.schema_path = Path(__file__).parent / "schema.json"
+        self.plugins = discover()
 
     def load_state(self, start: Path) -> AppState:
         loader = ConfigLoader(self.schema_path)
@@ -60,21 +64,42 @@ class App:
 
     def resolve(self, config: ShemulConfig, name: str):
         cmd_cfg = config.commands[name]
-        cmd = Command(name, cmd_cfg, config.vars, config.envs)
+        cmd = Command(name, cmd_cfg, config.vars, config.envs, bin_map=config.bin, current_os=detect_os(), runtime=config.runtime)
         return cmd.resolve()
 
     def run_command(self, config: ShemulConfig, name: str, dry: bool, trace: bool, extra_args: List[str]) -> int:
+        cmd_cfg = config.commands.get(name, {})
+        if has_planner_keys(cmd_cfg):
+            from .planner import CycleError
+
+            try:
+                return Planner(self).run(config, name, dry=dry, trace=trace, extra_args=extra_args).return_code
+            except CycleError as exc:
+                self.ui.error(f"Dependency cycle detected: {exc}")
+                return 1
+        return self._run_single(config, name, dry=dry, trace=trace, extra_args=extra_args)
+
+    def _run_single(self, config: ShemulConfig, name: str, dry: bool, trace: bool, extra_args: List[str]) -> int:
         resolved = self.resolve(config, name)
 
         if extra_args:
+            if resolved.exec_argv is not None:
+                new_command = resolved.command
+                new_exec_argv = resolved.exec_argv + list(extra_args)
+            else:
+                new_command = resolved.command + " " + " ".join(extra_args)
+                new_exec_argv = None
             resolved = resolved.__class__(
                 name=resolved.name,
-                command=resolved.command + " " + " ".join(extra_args),
+                command=new_command,
                 env=resolved.env,
                 confirm=resolved.confirm,
                 danger=resolved.danger,
                 desc=resolved.desc,
                 group=resolved.group,
+                shell=resolved.shell,
+                exec_argv=new_exec_argv,
+                runner=resolved.runner,
             )
 
         if trace:
@@ -95,7 +120,19 @@ class App:
             self.ui.info(resolved.command)
             return 0
 
-        result = self.executor.run(resolved.command, env=None, dry=False)
+        if resolved.runner and resolved.runner in self.plugins.runners:
+            try:
+                return int(self.plugins.runners[resolved.runner](resolved))
+            except Exception as exc:
+                self.ui.warn(f"Plugin runner '{resolved.runner}' failed ({exc}); using default execution.")
+
+        result = self.executor.run(
+            resolved.command,
+            env=None,
+            dry=False,
+            shell=resolved.shell,
+            exec_argv=resolved.exec_argv,
+        )
         if result.return_code == 0:
             self.ui.success("Command completed")
         else:
@@ -115,10 +152,12 @@ class App:
             return True
         return False
 
-    def completion(self, config: ShemulConfig, words: List[str]) -> List[str]:
-        builtins = ["init", "ls", "info", "help", "doctor", "schema", "_complete"]
-        candidates = list(set(builtins + self.command_names(config)))
-        return complete(words, candidates)
+    def completion(self, config: Optional[ShemulConfig], words: List[str]) -> List[str]:
+        system = ["init", "ls", "info", "help", "doctor", "schema", "alias", "update", "settings", "version", "about"]
+        candidates = set(system) | {f"/{name}" for name in system}
+        if config is not None:
+            candidates |= set(self.command_names(config))
+        return complete(words, sorted(candidates))
 
     def suggest(self, config: ShemulConfig, name: str) -> List[str]:
         candidates = self.command_names(config)

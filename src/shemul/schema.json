@@ -8,6 +8,8 @@
 		"name": { "type": "string" },
 		"version": { "type": "string" },
 		"runtime": { "type": "string" },
+		"requires": { "type": "string" },
+		"update_check": { "type": "boolean" },
 		"env": {
 			"type": "object",
 			"additionalProperties": {
@@ -18,6 +20,13 @@
 		"vars": {
 			"type": "object",
 			"additionalProperties": { "type": ["string", "number", "boolean"] }
+		},
+		"bin": {
+			"type": "object",
+			"additionalProperties": {
+				"type": "object",
+				"additionalProperties": { "type": "string" }
+			}
 		},
 		"commands": {
 			"type": "object",
@@ -31,7 +40,30 @@
 					"env": { "type": "string" },
 					"group": { "type": "string" },
 					"confirm": { "type": "boolean" },
-					"danger": { "type": "boolean" }
+					"danger": { "type": "boolean" },
+					"shell": { "type": ["string", "boolean"] },
+					"exec": {
+						"type": "array",
+						"items": { "type": "string" }
+					},
+					"os": {
+						"type": "object",
+						"additionalProperties": { "type": "string" }
+					},
+					"needs": {
+						"type": "array",
+						"items": { "type": "string" }
+					},
+					"pre": {
+						"type": "array",
+						"items": { "type": "string" }
+					},
+					"post": {
+						"type": "array",
+						"items": { "type": "string" }
+					},
+					"parallel": { "type": "boolean" },
+					"runner": { "type": "string" }
 				},
 				"additionalProperties": false
 			}

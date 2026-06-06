@@ -49,6 +49,36 @@ def global_config_path() -> Path:
     return base / "shemul" / "shemul.json"
 
 
+def global_cache_path() -> Path:
+    override = os.environ.get("SHEMUL_GLOBAL_CACHE_PATH")
+    if override:
+        return Path(override).expanduser()
+
+    config_home = os.environ.get("SHEMUL_CONFIG_HOME")
+    if config_home:
+        return Path(config_home).expanduser() / "shemul" / "update-cache.json"
+
+    if sys.platform.startswith("win"):
+        appdata = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA")
+        base = Path(appdata).expanduser() if appdata else (Path.home() / "AppData" / "Local")
+        return base / "Shemul" / "update-cache.json"
+
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Caches" / "Shemul" / "update-cache.json"
+
+    xdg_cache = os.environ.get("XDG_CACHE_HOME")
+    base = Path(xdg_cache).expanduser() if xdg_cache else (Path.home() / ".cache")
+    return base / "shemul" / "update-cache.json"
+
+
+def global_settings_path() -> Path:
+    override = os.environ.get("SHEMUL_SETTINGS_PATH")
+    if override:
+        return Path(override).expanduser()
+    # Settings live next to the global config (user preferences, not a cache).
+    return global_config_path().parent / "settings.json"
+
+
 def open_in_editor(path: Path) -> bool:
     editor = os.environ.get("SHEMUL_EDITOR") or os.environ.get("VISUAL") or os.environ.get("EDITOR")
     if editor:

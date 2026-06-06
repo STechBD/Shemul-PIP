@@ -30,6 +30,14 @@ class ShemulConfig:
     def envs(self) -> Dict[str, Any]:
         return dict(self.raw.get("env", {}))
 
+    @property
+    def bin(self) -> Dict[str, Any]:
+        return dict(self.raw.get("bin", {}))
+
+    @property
+    def runtime(self) -> str:
+        return str(self.raw.get("runtime", ""))
+
 
 class ConfigLoader:
     def __init__(self, schema_path: Path) -> None:
@@ -57,7 +65,9 @@ class ConfigLoader:
         merged = dict(global_cfg.raw)
         merged["vars"] = {**global_cfg.vars, **project.vars}
         merged["env"] = {**global_cfg.envs, **project.envs}
+        merged["bin"] = {**global_cfg.bin, **project.bin}
         merged["commands"] = {**global_cfg.commands, **project.commands}
         merged["name"] = project.name or global_cfg.name
+        merged["runtime"] = project.runtime or global_cfg.runtime
         merged_path = project.path
         return ShemulConfig(raw=merged, path=merged_path)

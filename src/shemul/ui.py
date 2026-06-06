@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 from rich.panel import Panel
 from rich.text import Text
@@ -27,7 +28,9 @@ class UI:
         for col in columns:
             table.add_column(col)
         for row in rows:
-            table.add_row(*row)
+            # Escape cell text so literal brackets (e.g. "[template]") are not
+            # consumed as Rich markup tags.
+            table.add_row(*(escape(str(cell)) for cell in row))
         self.console.print(table)
 
     def panel(self, title: str, body: str) -> None:
